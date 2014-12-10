@@ -3,8 +3,250 @@
 <head>
 	<meta charset="UTF-8">
 	<title>Portfolio</title>
+	<script type="text/javascript" src="js/processing.js"></script>
+	<script type="text/javascript" src="js/jquery-2.1.1.min.js"></script>
+	<script type="text/javascript" src="js/main.js"></script>
+	<style>
+		html {
+			height: 100%;
+			width: 100%;
+		}
+		body {
+			height: 100%;
+			width: 100%;
+		}
+		div#canvas {
+			height: 100%;
+			width: 100%;
+		}
+	</style>
 </head>
 <body>
-<p></p>
+	<div id="wrapper">
+		<canvas id="backCanvas" style="width: 100%;height: 100%;"></canvas>
+	</div>
+
+	<script id="processing-code" type="application/processing">
+
+	LineCreate[] lineCreates = new LineCreate[28];
+	LineCreate[] lineConnects = new LineCreate[27];
+	Ball[] balls = new Ball[13];
+
+	void setup() {
+		smooth();
+
+		float rad1, rad2;
+		float pos1X = random(innerWidth),
+		pos1Y = random(innerHeight),
+		vel1X = random(1),
+		vel1Y = random(1);
+
+		float pos2X, pos2Y, vel2X, vel2Y;
+		float dotX, dotY, speedX, speedY;
+		float diameter;
+
+		for ( int i = 0; i < lineCreates.length; i++ ) {
+			pos2X = random(innerWidth);
+			pos2Y = random(innerHeight);
+			vel2X = random(0.5);
+			vel2Y = random(0.5);
+
+			rad1 = random(1, 8);
+			rad2 = random(1, 8);
+
+			if (i % 5 == 0) {
+				pos1X = random(innerWidth);
+				pos1Y = random(innerHeight);
+				vel1X = random(0.6);
+				vel1Y = random(0.6);
+			}
+
+			lineCreates[i] = new LineCreate(pos1X, pos1Y, pos2X, pos2Y, vel1X, vel1Y, vel2X, vel2Y, rad1, rad2);
+
+			if (i > 0) {
+				int j = int(random(i));
+
+				lineConnects[i-1] = new LineCreate(lineCreates[j].pos2X, lineCreates[j].pos2Y, pos2X, pos2Y, lineCreates[j].vel2X, lineCreates[j].vel2Y, vel2X, vel2Y, 0, 0);
+			}
+		}
+
+		for (int i = 0; i < balls.length; i++) {
+			dotX = random(innerWidth / 5, innerWidth - (innerWidth / 5));
+			dotY = random(innerHeight / 5, innerHeight - (innerHeight / 5));
+			speedX = random(-0.4, 0.4);
+			speedY = random(-0.4, 0.4);
+			diameter = random(20, 50);
+
+			balls[i] = new Ball(dotX, dotY, speedX, speedY, diameter);
+		}
+	}
+
+	void draw() {
+		background(255);
+
+		for ( int i = 0; i < lineCreates.length; i++ ) {
+
+			lineCreates[i].run();
+
+			if ( i > 0 ) {
+				lineConnects[i-1].run();
+			}
+		}
+
+		for (int i = 0; i < balls.length; i++) {
+			balls[i].run();
+		}
+	}
+
+
+	class LineCreate {
+
+		float pos1X, pos1Y, pos2X, pos2Y;
+		float vel1X, vel1Y, vel2X, vel2Y;
+		float rad1, rad2, max1, max2;
+		float size1 = 0.02,
+		size2 = 0.02;
+
+		LineCreate(float p1X, float p1Y, float p2X, float p2Y, float v1X, float v1Y, float v2X, float v2Y, float radius1, float radius2) {
+			pos1X = p1X;
+			pos1Y = p1Y;
+			pos2X = p2X;
+			pos2Y = p2Y;
+
+			vel1X = v1X;
+			vel1Y = v1Y;
+			vel2X = v2X;
+			vel2Y = v2Y;
+
+			rad1 = radius1;
+			rad2 = radius2;
+
+			max1 = radius1;
+			max2 = radius2;
+		}
+
+		void run() {
+			move();
+			check();
+			draw();
+		}
+
+		void move() {
+			pos1X += vel1X;
+			pos1Y += vel1Y;
+			pos2X += vel2X;
+			pos2Y += vel2Y;
+
+			rad1 += size1;
+			rad2 += size2;
+		}
+
+		void check() {
+			if (pos1X < 0 || pos1X > innerWidth) {
+				vel1X = -vel1X;
+			}
+			if (pos1Y < 0 || pos1Y > innerHeight) {
+				vel1Y = -vel1Y;
+			}
+			if (pos2X < 0 || pos2X > innerWidth) {
+				vel2X = -vel2X;
+			}
+			if (pos2Y < 0 || pos2Y > innerHeight) {
+				vel2Y = -vel2Y;
+			}
+
+			if (rad1 < 0) {
+				size1 = -size1;
+			}
+			if (rad1 > max1) {
+				size1 = -size1;
+			}
+			if (rad2 < 0) {
+				size2 = -size2;
+			}
+			if (rad2 > max2) {
+				size2 = -size2;
+			}
+		}
+
+		void draw() {
+			stroke(100);
+			strokeWeight(1);
+			fill(100);
+
+			line(pos1X, pos1Y, pos2X, pos2Y);
+			ellipse(pos1X, pos1Y, rad1, rad1);
+			ellipse(pos2X, pos2Y, rad2, rad2);
+		}
+	}
+
+
+	class Ball {
+
+		float dotX, dotY;
+		float speedX, speedY;
+		float dia, max;
+		float opa = 3;
+
+		Ball(float dX, float dY, float sX, float sY, float diameter) {
+			dotX = dX;
+			dotY = dY;
+			speedX = sX;
+			speedY = sY;
+			dia = diameter;
+			max = diameter;
+		}
+
+		void run() {
+			move();
+			check();
+			draw();
+		}
+
+		void move() {
+			dotX += speedX;
+			dotY += speedY;
+		}
+
+		void check() {
+			if (dotX + (dia / 2) < 0 || dotX - (dia / 2) > innerWidth || dotY + (dia / 2) < 0 || dotY - (dia / 2) > innerHeight) {
+				dotX = random(innerWidth / 5, innerWidth - (innerWidth / 5));
+				dotY = random(innerHeight / 5, innerHeight - (innerHeight / 5));
+				max = random(25, 55);
+				speedX = random(-0.4, 0.4);
+				speedY = random(-0.4, 0.4);
+				dia = 1;
+				opa = 8;
+			}
+
+			if (dotX <= innerWidth / 10 || dotX >= innerWidth - (innerWidth / 10) || dotY <= innerHeight / 10 || dotY >= innerHeight - (innerHeight / 10)) {
+				if (dia > 0) {
+					if (frameCount % 2 == 0) {
+						dia -= 0.5;
+						opa += 0.1;
+					}
+				}
+			}
+			else {
+				if (dia < max) {
+					if (frameCount % 2 == 0) {
+						dia += 0.5;
+					}
+				}
+				if (opa > 3) {
+					opa -= 0.038;
+				}
+			}
+		}
+
+		void draw() {
+			noStroke();
+
+			fill(255, 0, 0, 255 / opa);
+			ellipse(dotX, dotY, dia, dia);
+		}
+	}
+
+	</script>
 </body>
 </html>
